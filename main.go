@@ -14,15 +14,21 @@ import (
 )
 
 func main() {
-
 	//Databse
 	//ToDo: make const -> move to env manager
 
 	var CONNECTION_STRING = os.Getenv("NL_BOT_CS")
 	var BOT_ACCCESS_TOCKEN = os.Getenv("NL_BOT_AT")
 
-	conn, _ := sqlx.Connect("pgx", CONNECTION_STRING)
+	if len(CONNECTION_STRING) == 0 || len(BOT_ACCCESS_TOCKEN) == 0 {
+		log.Panic("Set env variables for db and bot_token!")
+	}
+
+	conn, err := sqlx.Connect("pgx", CONNECTION_STRING)
 	neighborRepository := database.NewConcurrentNeighborRepository(*conn)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	//Bot
 	bot, err := tgbotapi.NewBotAPI(BOT_ACCCESS_TOCKEN)
