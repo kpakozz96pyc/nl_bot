@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"main/database"
 
@@ -37,7 +38,7 @@ func main() {
 	}
 
 	//Command handler
-	neighborManager := managers.NewNeighborManager(*neighborRepository, *bot)
+	neighborManager := managers.NewNeighborManager(*neighborRepository)
 
 	bot.Debug = true
 
@@ -56,28 +57,37 @@ func main() {
 		messageText := update.Message.Text
 		words := strings.Fields(messageText)
 		command := words[0]
-		log.Printf("Recieved command: %s , full message: %s", command, update.Message.Text)
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Unknown command, use /nl_help to show available")
 
 		switch command {
-		case "/start":
-			neighborManager.About(*update.Message)
+		case "/nl_help":
+			msg = neighborManager.About(*update.Message)
 
-		case "/list":
-			neighborManager.ShowList(*update.Message)
+		case "/nl_list":
+			msg = neighborManager.ShowList(*update.Message)
 
-		case "/reg":
-			neighborManager.RegisterNeighbor(*update.Message)
+		case "/nl_reg":
+			msg = neighborManager.RegisterNeighbor(*update.Message)
 
-		case "/del":
-			neighborManager.Delete(*update.Message)
+		case "/nl_del":
+			msg = neighborManager.Delete(*update.Message)
 
-		case "/me":
-			neighborManager.Me(*update.Message)
+		case "/nl_me":
+			msg = neighborManager.Me(*update.Message)
 
 		default:
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Unknown command, use /start to show available")
 			msg.ReplyToMessageID = update.Message.MessageID
-			bot.Send(msg)
 		}
+
+		sendedMsg, err := bot.Send(msg)
+
+		if err == nil {
+			if !update.Message.Chat.IsPrivate() {
+				time.AfterFunc(time.Duration(15)*time.Second, func() {
+					bot.DeleteMessage(tgbotapi.DeleteMessageConfig{ChatID: msg.ChatID, MessageID: sendedMsg.MessageID})
+				})
+			}
+		}
+
 	}
 }

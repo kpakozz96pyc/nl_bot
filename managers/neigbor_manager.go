@@ -11,16 +11,15 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func NewNeighborManager(repository database.ConcurrentNeighborRepository, tg_bot tgbotapi.BotAPI) *NeighborManager {
-	return &NeighborManager{repo: &repository, bot: &tg_bot}
+func NewNeighborManager(repository database.ConcurrentNeighborRepository) *NeighborManager {
+	return &NeighborManager{repo: &repository}
 }
 
 type NeighborManager struct {
 	repo *database.ConcurrentNeighborRepository
-	bot  *tgbotapi.BotAPI
 }
 
-func (nm NeighborManager) RegisterNeighbor(message tgbotapi.Message) {
+func (nm NeighborManager) RegisterNeighbor(message tgbotapi.Message) tgbotapi.MessageConfig {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, "")
 	msg.ReplyToMessageID = message.MessageID
@@ -28,42 +27,39 @@ func (nm NeighborManager) RegisterNeighbor(message tgbotapi.Message) {
 	neighbor, parseErr := parseNeigbor(message)
 	if parseErr != nil {
 		msg.Text = parseErr.Error()
-		nm.bot.Send(msg)
-		return
+		return msg
 	}
 
 	validateErr := validateNeighbor(neighbor)
 	if validateErr != nil {
 		msg.Text = validateErr.Error()
-		nm.bot.Send(msg)
-		return
+		return msg
 	}
 
 	nm.repo.Upsert(neighbor)
 	msg.Text = "Successsfully added user " + neighbor.Name
-	nm.bot.Send(msg)
+	return msg
 }
 
-func (nm NeighborManager) ShowList(message tgbotapi.Message) {
+func (nm NeighborManager) ShowList(message tgbotapi.Message) tgbotapi.MessageConfig {
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Error")
 	msg.ReplyToMessageID = message.MessageID
 
 	neighbors, err := nm.repo.GetAll()
 	if err == nil {
 		var list = ""
-
 		for _, n := range neighbors {
-			list = list + fmt.Sprintf("Имя %s, корпус: %d, секция: %d \n", n.Name, n.Building, n.Section)
+			list = list + fmt.Sprintf("Очередь: %d, Корпус: %d, секция: %d, Имя: %s\n", n.Turn, n.Building, n.Section, n.Name)
 		}
 		msg.Text = list
 	} else {
 		msg.Text = err.Error()
 	}
 
-	nm.bot.Send(msg)
+	return msg
 }
 
-func (nm NeighborManager) Delete(message tgbotapi.Message) {
+func (nm NeighborManager) Delete(message tgbotapi.Message) tgbotapi.MessageConfig {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Error: ")
 	msg.ReplyToMessageID = message.MessageID
@@ -75,10 +71,10 @@ func (nm NeighborManager) Delete(message tgbotapi.Message) {
 		msg.Text += err.Error()
 	}
 
-	nm.bot.Send(msg)
+	return msg
 }
 
-func (nm NeighborManager) Me(message tgbotapi.Message) {
+func (nm NeighborManager) Me(message tgbotapi.Message) tgbotapi.MessageConfig {
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Error: ")
 	msg.ReplyToMessageID = message.MessageID
 
@@ -94,24 +90,24 @@ func (nm NeighborManager) Me(message tgbotapi.Message) {
 		msg.Text += err.Error()
 	}
 
-	nm.bot.Send(msg)
+	return msg
 }
 
-func (nm NeighborManager) About(message tgbotapi.Message) {
+func (nm NeighborManager) About(message tgbotapi.Message) tgbotapi.MessageConfig {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID,
 		`Здравствуйте это бот чата дольщиков Нового Лесснера
 		Доступные команды: 
-		/me - показать записи зарегистрированные с моего телеграмм-аккаунта
-		/del - удалить записи зарегистрированные с моего телеграмм-аккаунта
-		/reg {очередь} {корпус} {секция} {Имя}  - зарегистрировать свой корпус + секцию + Имя. 
+		/nl_me - показать записи зарегистрированные с моего телеграмм-аккаунта
+		/nl_del - удалить записи зарегистрированные с моего телеграмм-аккаунта
+		/nl_reg {очередь} {корпус} {секция} {Имя}  - зарегистрировать свой корпус + секцию + Имя. 
 			Имя - необязательный параметр(в случае его отсутсвтия будут использованные данные из телеграмма). 
-			Например "/reg 1 1 4 Анатолий" или "/reg 1 1 4"
-		/list - вывести список зарегистрированных
+			Например "/nl_reg 1 1 4 Анатолий" или "/nl_reg 1 1 4"
+		/nl_list - вывести список зарегистрированных
 	`)
 	msg.ReplyToMessageID = message.MessageID
 
-	nm.bot.Send(msg)
+	return msg
 }
 
 func validateNeighbor(n models.Neighbor) error {
@@ -165,8 +161,11 @@ func parseNeigbor(message tgbotapi.Message) (models.Neighbor, error) {
 
 	neighbor.Section = int64(section)
 
-	if len(words) == 5 {
-		neighbor.Name = words[4]
+	if len(words) > 4 {
+		neighbor.Name = ""
+		for i := 4; i < len(words); i++ {
+			neighbor.Name += words[i] + " "
+		}
 	} else {
 		neighbor.Name = message.From.FirstName + " " + message.From.LastName
 	}

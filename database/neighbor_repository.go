@@ -20,7 +20,7 @@ func NewConcurrentNeighborRepository(database sqlx.DB) *ConcurrentNeighborReposi
 func (cnr ConcurrentNeighborRepository) GetAll() ([]models.Neighbor, error) {
 
 	var neighbors []models.Neighbor
-	err := cnr.db.Select(&neighbors, "select * from neighbors")
+	err := cnr.db.Select(&neighbors, "select * from neighbors order by turn, building, section")
 	if err != nil {
 		return nil, err
 	}
