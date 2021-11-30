@@ -71,7 +71,7 @@ func main() {
 			case "/nl_list":
 				msg = neighborManager.ShowList(*update.Message)
 				msg.ReplyToMessageID = update.Message.MessageID
-				sendedMsg, err = bot.Send(msg)
+				sendedMsg, err = sendBigMessage(bot, msg)
 
 			case "/nl_reg":
 				msg = neighborManager.RegisterNeighbor(*update.Message)
@@ -115,4 +115,22 @@ func main() {
 		}
 
 	}
+}
+
+func sendBigMessage(bot *tgbotapi.BotAPI, msg tgbotapi.MessageConfig) (tgbotapi.Message, error) {
+	arr := strings.Split(msg.Text, "\n")
+	page := 0
+	m := ""
+	var sendedMsg tgbotapi.Message
+	var err error
+	for i := 0; i < len(arr); i++ {
+		m += arr[i] + "\n"
+		page++
+		if page == 10 || i == len(arr)-1 {
+			sendedMsg, err = bot.Send(tgbotapi.NewMessage(msg.ChatID, m))
+			page = 0
+			m = ""
+		}
+	}
+	return sendedMsg, err
 }
