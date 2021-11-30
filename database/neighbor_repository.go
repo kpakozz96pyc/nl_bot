@@ -4,6 +4,7 @@ import (
 	"main/models"
 	"strconv"
 
+	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 )
 
