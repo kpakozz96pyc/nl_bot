@@ -102,7 +102,7 @@ func (nm NeighborManager) About(message tgbotapi.Message) tgbotapi.MessageConfig
 		/nl_del - удалить записи зарегистрированные с моего телеграмм-аккаунта
 		/nl_reg {очередь} {корпус} {секция} {Имя}  - зарегистрировать свой корпус + секцию + Имя. 
 			Имя - необязательный параметр(в случае его отсутсвтия будут использованные данные из телеграмма). 
-			Например "/nl_reg 1 1 1 4 Анатолий" или "/nl_reg 1 1 1 4"
+			Например "/nl_reg 1 1 4 Анатолий" или "/nl_reg 1 1 4"
 		/nl_list - вывести список зарегистрированных
 	`)
 	msg.ReplyToMessageID = message.MessageID
@@ -123,8 +123,8 @@ func validateNeighbor(n models.Neighbor) error {
 		return errors.New("укажите правильный номер корпуса для 2ой очереди 1-7")
 	}
 
-	if n.Section < 1 || n.Section > 20 {
-		return errors.New("укажите правильный номер секции от 1 до 20")
+	if n.Section < 1 || n.Section > 30 {
+		return errors.New("укажите правильный номер секции от 1 до 30")
 	}
 	return nil
 }
