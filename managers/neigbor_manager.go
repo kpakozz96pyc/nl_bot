@@ -36,8 +36,12 @@ func (nm NeighborManager) RegisterNeighbor(message tgbotapi.Message) tgbotapi.Me
 		return msg
 	}
 
-	nm.repo.Upsert(neighbor)
-	msg.Text = "Successsfully added user " + neighbor.Name
+	error := nm.repo.Upsert(neighbor)
+	if error == nil {
+		msg.Text = "Successsfully added user " + neighbor.Name
+	} else {
+		msg.Text = error.Error()
+	}
 	return msg
 }
 
@@ -77,8 +81,14 @@ func (nm NeighborManager) Delete(message tgbotapi.Message) tgbotapi.MessageConfi
 func (nm NeighborManager) Me(message tgbotapi.Message) tgbotapi.MessageConfig {
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Error: ")
 	msg.ReplyToMessageID = message.MessageID
+	var neighbors []models.Neighbor
+	var err error
 
-	neighbors, err := nm.repo.GetByTelegramName(message.From.UserName)
+	if len(message.From.UserName) > 0 {
+		neighbors, err = nm.repo.GetByTelegramName(message.From.UserName)
+	} else {
+		neighbors, err = nm.repo.GetByTelegramId(int64(message.From.ID))
+	}
 	if err == nil {
 		var list = fmt.Sprintf("Список зарегистрированных на вашего телеграмм пользователя (%d): \n", len(neighbors))
 
@@ -134,6 +144,7 @@ func parseNeigbor(message tgbotapi.Message) (models.Neighbor, error) {
 		TelegramFirstName: message.From.FirstName,
 		TelegramLastName:  message.From.LastName,
 		TelegramUserName:  message.From.UserName,
+		TelegramUserId:    int64(message.From.ID),
 	}
 
 	words := strings.Fields(message.Text)
