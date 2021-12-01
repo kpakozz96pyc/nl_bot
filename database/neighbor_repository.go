@@ -108,11 +108,23 @@ func (cnr ConcurrentNeighborRepository) UpdateById(n models.Neighbor) error {
 	return nil
 }
 
-func (cnr ConcurrentNeighborRepository) Delete(telegramUserName string) error {
+func (cnr ConcurrentNeighborRepository) DeleteByUserName(telegramUserName string) error {
 
 	query := `Delete from neighbors where telegram_user_name =$1`
 
 	_, er := cnr.db.Exec(query, telegramUserName)
+	if er != nil {
+		return er
+	}
+
+	return nil
+}
+
+func (cnr ConcurrentNeighborRepository) DeleteByUserId(userId int64) error {
+
+	query := `Delete from neighbors where telegram_user_id =$1`
+
+	_, er := cnr.db.Exec(query, strconv.FormatInt(userId, 10))
 	if er != nil {
 		return er
 	}

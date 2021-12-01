@@ -67,12 +67,27 @@ func (nm NeighborManager) Delete(message tgbotapi.Message) tgbotapi.MessageConfi
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Error: ")
 	msg.ReplyToMessageID = message.MessageID
+	var err error
 
-	err := nm.repo.Delete(message.From.UserName)
-	if err == nil {
-		msg.Text = "Successfully deleted records for username: " + message.From.UserName
+	byId, _ := nm.repo.GetByTelegramId(int64(message.From.ID))
+	if len(byId) > 0 {
+		err = nm.repo.DeleteByUserId(int64(message.From.ID))
+		if err == nil {
+			msg.Text = fmt.Sprintf("Successfully deleted records for userId: %d", message.From.ID)
+		} else {
+			msg.Text += err.Error()
+		}
 	} else {
-		msg.Text += err.Error()
+		if len(message.From.UserName) > 0 {
+			err = nm.repo.DeleteByUserName(message.From.UserName)
+			if err == nil {
+				msg.Text = "Successfully deleted records for username: " + message.From.UserName
+			} else {
+				msg.Text += err.Error()
+			}
+		} else {
+			msg.Text = "Can't read you username please use /nl_reg again"
+		}
 	}
 
 	return msg
