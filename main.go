@@ -19,7 +19,7 @@ func main() {
 	//ToDo: make const -> move to env manager
 
 	var CONNECTION_STRING = os.Getenv("NL_BOT_CS")
-	var BOT_ACCCESS_TOCKEN = os.Getenv("NL_BOT_AT")
+	var BOT_ACCCESS_TOCKEN = os.Getenv("NL_BOT_AT")	
 
 	if len(CONNECTION_STRING) == 0 || len(BOT_ACCCESS_TOCKEN) == 0 {
 		log.Panic("Set env variables for db and bot_token!")
@@ -99,6 +99,7 @@ func main() {
 				if !update.Message.Chat.IsPrivate() {
 					time.AfterFunc(time.Duration(15)*time.Second, func() {
 						bot.DeleteMessage(tgbotapi.DeleteMessageConfig{ChatID: msg.ChatID, MessageID: sendedMsg.MessageID})
+						bot.DeleteMessage(tgbotapi.DeleteMessageConfig{ChatID: msg.ChatID, MessageID: update.Message.MessageID})
 					})
 				}
 			}
